@@ -4,6 +4,7 @@ using BiletHackanton.Models.Dtos.EventDto.Response;
 using BiletHackanton.Models.Orm;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace BiletHackanton.Controllers
 {
@@ -22,19 +23,26 @@ namespace BiletHackanton.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<GetAllEventsResponseDto> result = db.Events.Include(c => c.Category).Select(x => new GetAllEventsResponseDto()
-            {
-                EventID = x.EventID,
-                CategoryID = x.CategoryID,
-                CategoryName = x.Category.Name,
-                Title = x.Title,
-                Description = x.Description,
-                StartDate = x.StartDate,
-                EndDate = x.EndDate,
-                VenueName = x.VenueName,
-                Address = x.Address,
-                GoogleMapsLink = x.GoogleMapsLink
-            }).ToList();
+            List<GetAllEventsResponseDto> result = db.Events
+                .Include(i => i.Images)
+                .Include(c => c.Category)
+                .Select(x => new GetAllEventsResponseDto()
+                {
+                    EventID = x.EventID,
+                    CategoryID = x.CategoryID,
+                    ImageURL = x.Images.FirstOrDefault().ImageURL,
+                    CategoryName = x.Category.Name,
+                    Title = x.Title,
+                    Description = x.Description,
+                    Genre = x.Genre,
+                    Cost = x.Cost,
+                    StartDate = x.StartDate,
+                    EndDate = x.EndDate,
+                    VenueName = x.VenueName,
+                    Address = x.Address,
+                    GoogleMapsLink = x.GoogleMapsLink
+                })
+                .ToList();
 
             if (result.Count != 0)
             {
@@ -46,10 +54,11 @@ namespace BiletHackanton.Controllers
             }
         }
 
+
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            Event eventy = db.Events.Include(c => c.Category).FirstOrDefault(c => c.EventID == id);
+            Event eventy = db.Events.Include(i => i.Images).Include(c => c.Category).FirstOrDefault(c => c.EventID == id);
 
             if (eventy == null)
             {
@@ -60,9 +69,12 @@ namespace BiletHackanton.Controllers
                 GetAllEventsResponseDto response = new GetAllEventsResponseDto();
                 response.EventID = eventy.EventID;
                 response.CategoryID = eventy.CategoryID;
+                response.ImageURL = eventy.Images.FirstOrDefault().ImageURL;
                 response.CategoryName = eventy.Category.Name;
                 response.Title = eventy.Title;
                 response.Description = eventy.Description;
+                response.Genre = eventy.Genre;
+                response.Cost = eventy.Cost;
                 response.StartDate = eventy.StartDate;
                 response.EndDate = eventy.EndDate;
                 response.VenueName = eventy.VenueName;
@@ -77,8 +89,10 @@ namespace BiletHackanton.Controllers
         {
             Event eventy = new Event();
             eventy.CategoryID = request.CategoryID;
-            eventy.Title = request.Title.ToLower();
-            eventy.Description = request.Description.ToLower();
+            eventy.Title = request.Title.ToUpper();
+            eventy.Description = request.Description;
+            eventy.Genre = request.Genre;
+            eventy.Cost = request.Cost;
             eventy.StartDate = request.StartDate;
             eventy.EndDate = request.EndDate;
             eventy.VenueName = request.VenueName;
@@ -104,8 +118,10 @@ namespace BiletHackanton.Controllers
             if (result != null)
             {
                 result.CategoryID = eventDto.CategoryID;
-                result.Title = eventDto.Title;
+                result.Title = eventDto.Title.ToUpper();
                 result.Description = eventDto.Description;
+                result.Genre = eventDto.Genre;
+                result.Cost = eventDto.Cost;
                 result.StartDate = eventDto.StartDate;
                 result.EndDate = eventDto.EndDate;
                 result.VenueName = eventDto.VenueName;
@@ -126,6 +142,8 @@ namespace BiletHackanton.Controllers
                 CategoryName = c.Category.Name,
                 Title = c.Title,
                 Description = c.Description,
+                Genre = c.Genre,
+                Cost = c.Cost,
                 StartDate = c.StartDate,
                 EndDate = c.EndDate,
                 VenueName = c.VenueName,

@@ -29,7 +29,9 @@ namespace BiletHackanton.Controllers
                 TicketID = t.TicketID,
                 EventID = t.EventID,
                 Title = t.Event.Title,
+                TicketType = t.TicketType,
                 SeatNumber = t.SeatNumber,
+                Cost =t.Event.Cost,
                 Price = t.Price
             }).ToList();
             if (tickets.Count != 0)
@@ -54,38 +56,50 @@ namespace BiletHackanton.Controllers
                 TicketID = ticket.TicketID,
                 EventID = ticket.EventID,
                 Title = ticket.Event.Title,
+                TicketType = ticket.TicketType,
                 SeatNumber = ticket.SeatNumber,
                 Price = ticket.Price
             };
 
             return Ok(response);
         }
-
         [HttpPost]
-        public IActionResult Post(CreateTicketRequestDto ticketDto)
+        public IActionResult Post([FromBody] List<CreateTicketRequestDto> ticketDtos)
         {
             if (!ModelState.IsValid)
                 return BadRequest("Invalid data");
 
-            Ticket ticket = new Ticket
-            {
-                EventID = ticketDto.EventID,
-                SeatNumber = ticketDto.SeatNumber,
-                Price = ticketDto.Price
-            };
+            List<Ticket> tickets = new List<Ticket>();
 
-            db.Ticket.Add(ticket);
+            foreach (var ticketDto in ticketDtos)
+            {
+                Ticket ticket = new Ticket
+                {
+                    EventID = ticketDto.EventID,
+                    TicketType = ticketDto.TicketType,
+                    SeatNumber = ticketDto.SeatNumber.ToUpper(),
+                    Price = ticketDto.Price
+                };
+
+                tickets.Add(ticket);
+            }
+
+            db.Ticket.AddRange(tickets);
             db.SaveChanges();
+
             List<GetAllTicketResponsDto> response = db.Ticket.Include(c => c.Event).Select(c => new GetAllTicketResponsDto
             {
                 TicketID = c.TicketID,
                 EventID = c.EventID,
                 Title = c.Event.Title,
-                SeatNumber = c.SeatNumber,
+                TicketType = c.TicketType,
+                SeatNumber = c.SeatNumber.ToUpper(),
                 Price = c.Price
             }).ToList();
+
             return Ok(response);
         }
+
 
         [HttpPut("{id}")]
         public IActionResult Put(int id, UpdateTicketRequestDto ticketDto)
@@ -98,7 +112,8 @@ namespace BiletHackanton.Controllers
             if (ticket != null)
             {
                 ticket.EventID = ticketDto.EventID;
-                ticket.SeatNumber = ticketDto.SeatNumber;
+                ticket.TicketType = ticketDto.TicketType;
+                ticket.SeatNumber = ticketDto.SeatNumber.ToUpper();
                 ticket.Price = ticketDto.Price;
                 db.SaveChanges();
             }
@@ -110,6 +125,7 @@ namespace BiletHackanton.Controllers
             {
                 TicketID = c.TicketID,
                 EventID = c.EventID,
+                TicketType = c.TicketType,
                 Title = c.Event.Title,
                 SeatNumber = c.SeatNumber,
                 Price = c.Price

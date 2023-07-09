@@ -7,6 +7,7 @@ namespace BiletHackanton.Models.Orm
     {
         public int ImageID { get; set; }
         public int EventID { get; set; }
+        public string? PosterURL { get; set; }
         public string ImageURL { get; set; }
 
         public Event Event { get; set; }

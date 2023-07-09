@@ -6,6 +6,7 @@ using BiletHackanton.Models.Dtos.ImageDto.Response;
 using BiletHackanton.Models.Orm;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BiletHackanton.Controllers
 {
@@ -22,16 +23,39 @@ namespace BiletHackanton.Controllers
         [HttpGet]
         public IActionResult GetAll()
         {
-            List<GetAllImageResponseDto> Images = db.Images.Select(q => new GetAllImageResponseDto()
+            List<GetAllImageResponseDto> responseDtos = db.Images.Select(q => new GetAllImageResponseDto()
             {
                 ImageID = q.ImageID,
                 EventID = q.EventID,
+                PosterURL = q.PosterURL,
                 ImageURL = q.ImageURL
             }).ToList();
 
-            if (Images.Count != 0)
+            if (responseDtos.Count != 0)
             {
-                return Ok(Images);
+                return Ok(responseDtos);
+            }
+            else
+            {
+                return NotFound("Data not found");
+            }
+        }
+
+        [HttpGet("card")]
+        public IActionResult Getcard()
+        {
+            List<CardImageResponseDto> responseDtos = db.Images.Include(c => c.Event).Select(q => new CardImageResponseDto()
+            {
+                ImageID = q.ImageID,
+                Title = q.Event.Title,
+                Description = q.Event.Description,
+                PosterURL = q.PosterURL,
+                ImageURL = q.ImageURL
+            }).ToList();
+
+            if (responseDtos.Count != 0)
+            {
+                return Ok(responseDtos);
             }
             else
             {
@@ -42,18 +66,19 @@ namespace BiletHackanton.Controllers
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            Image Image = db.Images.FirstOrDefault(c => c.ImageID == id);
+            Image image = db.Images.FirstOrDefault(c => c.ImageID == id);
 
-            if (Image == null)
+            if (image == null)
             {
                 return NotFound(id + " User with id not found");
             }
             else
             {
                 GetAllImageResponseDto response = new GetAllImageResponseDto();
-                response.ImageID = Image.ImageID;
-                response.EventID = Image.EventID;
-                response.ImageURL = Image.ImageURL;
+                response.ImageID = image.ImageID;
+                response.EventID = image.EventID;
+                response.PosterURL = image.PosterURL;
+                response.ImageURL = image.ImageURL;
                 return Ok(response);
             }
         }
@@ -63,17 +88,17 @@ namespace BiletHackanton.Controllers
         public IActionResult Post(CreateImageRequestDto createImage)
         {
 
-            Image Image = new Image();
-            Image.EventID = createImage.EventID;
-            Image.ImageURL = createImage.ImageURL;
-            db.Images.Add(Image);
+            Image image = new Image();
+            image.EventID = createImage.EventID;
+            image.ImageURL = createImage.ImageURL;
+            db.Images.Add(image);
             db.SaveChanges();
             return Ok(createImage);
 
         }
 
         [HttpPut("{id}")]
-        public IActionResult Put(int id, UpdateImageRequestDto Image)
+        public IActionResult Put(int id, UpdateImageRequestDto image)
         {
             if (!ModelState.IsValid)
                 return BadRequest("Invalid data");
@@ -82,8 +107,9 @@ namespace BiletHackanton.Controllers
 
             if (result != null)
             {
-                result.EventID = Image.EventID;
-                result.ImageURL = Image.ImageURL;
+                result.EventID = image.EventID;
+                result.PosterURL = image.PosterURL;
+                result.ImageURL = image.ImageURL;
                 db.SaveChanges();
             }
             else
@@ -94,6 +120,7 @@ namespace BiletHackanton.Controllers
             {
                 ImageID = c.ImageID,
                 EventID = c.EventID,
+                PosterURL = c.PosterURL,
                 ImageURL = c.ImageURL,
             }).ToList();
             return Ok(response);
@@ -106,11 +133,11 @@ namespace BiletHackanton.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            Image Image = db.Images.FirstOrDefault(q => q.ImageID == id);
+            Image image = db.Images.FirstOrDefault(q => q.ImageID == id);
 
-            if (Image != null)
+            if (image != null)
             {
-                db.Images.Remove(Image);
+                db.Images.Remove(image);
                 db.SaveChanges();
                 return Ok("Deleted");
             }
